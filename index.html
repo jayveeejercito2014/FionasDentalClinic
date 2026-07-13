@@ -522,10 +522,10 @@
         // ==========================================
         // GOOGLE SHEETS CLOUD INTEGRATION ENGINE
         // ==========================================
-        const API_URL = "https://script.google.com/macros/s/AKfycbzvHy_23iSobQvQ5V0epMbi2TG7GoKd8_l93lJ703q8aL9ek-7UNuUVMXFxni6eX79I/exec"; // <--- PALITAN MO ITO NG IYONG DEPLOYED WEB APP URL MULA SA GOOGLE SHEETS!
+        const API_URL = "https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec"; // <--- PALITAN MO ITO NG IYONG DEPLOYED WEB APP URL MULA SA GOOGLE SHEETS!
 
         async function syncPush(sheetName, fullDataArray) {
-            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzvHy_23iSobQvQ5V0epMbi2TG7GoKd8_l93lJ703q8aL9ek-7UNuUVMXFxni6eX79I/exec")) return;
+            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec")) return;
             try {
                 await fetch(API_URL, {
                     method: "POST",
@@ -539,7 +539,7 @@
         }
 
         async function syncFetch(sheetName) {
-            if (!API_URL || API_URL.includes("IYONG_WEB_APP_URL_DITO")) return JSON.parse(localStorage.getItem(sheetName)) || [];
+            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec")) return JSON.parse(localStorage.getItem(sheetName)) || [];
             try {
                 let res = await fetch(`${API_URL}?sheet=${sheetName}`);
                 let data = await res.json();
