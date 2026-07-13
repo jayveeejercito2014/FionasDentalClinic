@@ -519,6 +519,52 @@
     </footer>
 
     <script>
+        // ==========================================
+        // GOOGLE SHEETS CLOUD INTEGRATION ENGINE
+        // ==========================================
+        const API_URL = "https://script.google.com/macros/s/AKfycbzvHy_23iSobQvQ5V0epMbi2TG7GoKd8_l93lJ703q8aL9ek-7UNuUVMXFxni6eX79I/exec"; // <--- PALITAN MO ITO NG IYONG DEPLOYED WEB APP URL MULA SA GOOGLE SHEETS!
+
+        async function syncPush(sheetName, fullDataArray) {
+            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzvHy_23iSobQvQ5V0epMbi2TG7GoKd8_l93lJ703q8aL9ek-7UNuUVMXFxni6eX79I/exec")) return;
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "saveAll", sheet: sheetName, data: fullDataArray })
+                });
+            } catch (e) {
+                console.error("Cloud push failed for " + sheetName, e);
+            }
+        }
+
+        async function syncFetch(sheetName) {
+            if (!API_URL || API_URL.includes("IYONG_WEB_APP_URL_DITO")) return JSON.parse(localStorage.getItem(sheetName)) || [];
+            try {
+                let res = await fetch(`${API_URL}?sheet=${sheetName}`);
+                let data = await res.json();
+                localStorage.setItem(sheetName, JSON.stringify(data)); // Save local copy
+                return data;
+            } catch (e) {
+                console.warn("Cloud fetch failed for " + sheetName + ". Using local data fallback.", e);
+                return JSON.parse(localStorage.getItem(sheetName)) || [];
+            }
+        }
+
+        async function initialCloudBoot() {
+            // Hilahin ang fresh data mula sa Cloud database sa pag-start ng system
+            let users = await syncFetch('clinic_users');
+            if (users.length === 0) getAccounts(); // Generate fallback admin kung walang nakuha
+            
+            await syncFetch('appointments');
+            await syncFetch('sales');
+
+            // I-reload ang UI at mga tables gamit ang bagong sync data
+            loadTable();
+            loadSalesTable();
+            checkTomorrowAppointments();
+        }
+
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         let loggedInUser = "";
         let currentUserRole = ""; 
@@ -558,6 +604,7 @@
                     role: 'Admin' 
                 });
                 localStorage.setItem('clinic_users', JSON.stringify(accounts));
+                syncPush('clinic_users', accounts);
             }
             return accounts;
         }
@@ -566,8 +613,11 @@
         function getSales() { return JSON.parse(localStorage.getItem('sales')) || []; }
 
         function clearAllRecords() {
+            if(!confirm("Are you sure you want to clear all data? This will also wipe out local data.")) return;
             localStorage.removeItem('appointments');
             localStorage.removeItem('sales');
+            syncPush('appointments', []);
+            syncPush('sales', []);
             resetAppointmentForm();
             loadTable();
             loadSalesTable();
@@ -658,13 +708,14 @@
             accounts[idx].civilStatus = statusInp;
 
             localStorage.setItem('clinic_users', JSON.stringify(accounts));
+            syncPush('clinic_users', accounts); // Cloud Push Sync
+            
             msg.innerText = "Profile changes successfully updated!";
             msg.className = "text-xs text-emerald-600 text-center font-medium mt-3 block";
             
             document.getElementById('dropdownUserLabel').innerText = nameInp;
             document.getElementById('dropdownRoleLabel').innerText = currentUserRole;
 
-            // I-update rin ang session storage kung ang binago ay ang sariling profile
             sessionStorage.setItem('session_user_name', nameInp);
 
             setTimeout(() => { 
@@ -726,6 +777,7 @@
             const accounts = getAccounts();
             accounts[index].password = "Welcome2026!";
             localStorage.setItem('clinic_users', JSON.stringify(accounts));
+            syncPush('clinic_users', accounts); // Cloud Push Sync
             alert(`SUCCESS! Temporary Password is: Welcome2026!`);
         }
 
@@ -758,6 +810,7 @@
             accounts[index].role = document.getElementById('adminEditRole').value;
 
             localStorage.setItem('clinic_users', JSON.stringify(accounts));
+            syncPush('clinic_users', accounts); // Cloud Push Sync
             closeAdminEditUserModal();
             loadAccountsManagementTable();
         });
@@ -805,6 +858,7 @@
 
             accounts.push({ username: newU, password: newP, name, birthdate: bdate, civilStatus: status, role });
             localStorage.setItem('clinic_users', JSON.stringify(accounts));
+            syncPush('clinic_users', accounts); // Cloud Push Sync
 
             document.getElementById('createAccountForm').reset();
             document.getElementById('newAgeDisplay').value = "--";
@@ -867,7 +921,6 @@
                 currentUserRole = matchedUser.role || "Admin";
                 const displayName = matchedUser.name || loggedInUser;
                 
-                // SAVE SESSION TO sessionStorage PARA HINDI MA-LOGOUT SA RELOAD
                 sessionStorage.setItem('session_logged_in', 'true');
                 sessionStorage.setItem('session_username', loggedInUser);
                 sessionStorage.setItem('session_user_role', currentUserRole);
@@ -881,7 +934,6 @@
             }
         });
 
-        // HIWALAY NA FUNCTION PARA SA PAG-APPLY NG UI PAGKA-LOGIN / PAG-RELOAD
         function renderLoggedInUI(displayName) {
             document.getElementById('welcomeContent').classList.add('hidden');
             document.getElementById('adminDashboard').classList.remove('hidden');
@@ -894,7 +946,6 @@
             checkTomorrowAppointments();
         }
 
-        // AUTO-CHECK FUNCTION TUWING MAGRE-RELOAD NG BROWSER
         function checkExistingSession() {
             const isLogged = sessionStorage.getItem('session_logged_in');
             if (isLogged === 'true') {
@@ -908,7 +959,6 @@
 
         function logout() {
             loggedInUser = ""; currentUserRole = "";
-            // BURAHIN ANG SESSION DATA PAG NAG-LOGOUT
             sessionStorage.clear();
 
             document.getElementById('welcomeContent').classList.remove('hidden');
@@ -973,6 +1023,11 @@
                 appointments.push({ name, phone, service, dateTime, isCompleted: false });
                 localStorage.setItem('appointments', JSON.stringify(appointments));
             }
+            
+            // Cloud Sync push
+            syncPush('appointments', appointments);
+            syncPush('sales', sales);
+
             resetAppointmentForm(); loadTable(); loadSalesTable(); checkTomorrowAppointments();
         });
 
@@ -988,6 +1043,10 @@
             const sales = getSales();
             sales.unshift({ patient: app.name, service: app.service, cost: 0, paidAmount: 0, status: 'Pending Invoice', date: new Date().toLocaleDateString(), timestamp: new Date().getTime(), isPending: true });
             localStorage.setItem('sales', JSON.stringify(sales));
+
+            // Cloud Sync push
+            syncPush('appointments', appointments);
+            syncPush('sales', sales);
 
             if (currentUserRole === 'Clinic Secretary') {
                 alert("Patient status updated to completed! Forwarded to Cashier for billing.");
@@ -1015,6 +1074,10 @@
             const sales = getSales();
             sales.unshift({ patient: app.name, service: app.service, cost: 0, paidAmount: 0, status: 'Cancelled', date: new Date().toLocaleDateString(), timestamp: new Date().getTime(), isPending: false });
             localStorage.setItem('sales', JSON.stringify(sales));
+
+            // Cloud Sync push
+            syncPush('appointments', appointments);
+            syncPush('sales', sales);
 
             loadTable(); loadSalesTable(); checkTomorrowAppointments();
         }
@@ -1047,6 +1110,8 @@
             else { sales.unshift(invoice); }
             
             localStorage.setItem('sales', JSON.stringify(sales));
+            syncPush('sales', sales); // Cloud Sync push
+
             document.getElementById('posBillingForm').reset();
             loadSalesTable();
         });
@@ -1083,12 +1148,15 @@
                 sale.paidAmount += addPayment;
                 sale.status = sale.paidAmount >= sale.cost ? 'Paid' : 'With Balance';
                 localStorage.setItem('sales', JSON.stringify(sales));
+                syncPush('sales', sales); // Cloud Sync push
+                
                 loadSalesTable(); cancelBalancePayment(); 
             }
         });
 
         function loadTable() {
             const tbody = document.getElementById('tableBody');
+            if(!tbody) return;
             tbody.innerHTML = '';
             const filterDateVal = document.getElementById('filterDate').value;
             const todayStr = new Date().toISOString().split('T')[0];
@@ -1207,16 +1275,19 @@
             const tomorrowStr = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1).toDateString();
             let tc = getAppointments().filter(app => !app.isCompleted && new Date(app.dateTime).toDateString() === tomorrowStr).length;
             const alertBanner = document.getElementById('tomorrowAlert');
-            if (tc > 0) { alertBanner.innerText = `${tc} due tomorrow`; alertBanner.classList.remove('hidden'); } 
-            else { alertBanner.classList.add('hidden'); }
+            if (alertBanner) {
+                if (tc > 0) { alertBanner.innerText = `${tc} due tomorrow`; alertBanner.classList.remove('hidden'); } 
+                else { alertBanner.classList.add('hidden'); }
+            }
         }
 
-        // INITIALIZATION
-        getAccounts();
+        // INITIALIZATION ON LOAD
         document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
         
-        // JALANIN ANG SESSION CHECK SA BAWAT PAG-LOAD/RELOAD NG PAGE
+        // Patakbuhin ang session validation at hilaan ng data mula sa Google Sheet Cloud
         checkExistingSession();
+        initialCloudBoot();
     </script>
+    
 </body>
 </html>
