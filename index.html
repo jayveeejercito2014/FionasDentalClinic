@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiona's Dental Clinic - Admin Scheduler & POS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        matte: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            950: '#2e1065',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link class="hidden" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-700 font-sans antialiased text-sm" onclick="closeDropdownOutside(event)">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-matte-600 rounded-lg flex items-center justify-center text-white text-sm">
+                    <i class="fa-solid fa-tooth"></i>
+                </div>
+                <span class="text-base font-semibold text-matte-950 tracking-tight">Fiona's Dental Clinic</span>
+            </div>
+            <nav class="flex items-center gap-4 font-medium">
+                <button onclick="clearAllRecords()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md hover:bg-slate-200 transition text-xs font-medium border border-slate-200">Clear Data</button>
+                
+                <div id="userDropdownNav" class="hidden relative inline-block text-left">
+                    <button onclick="toggleDropdown(event)" class="bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-md border border-slate-200 transition text-xs font-semibold flex items-center gap-2 focus:outline-none">
+                        <i class="fa-solid fa-circle-user text-matte-600 text-sm"></i>
+                        <div class="text-left leading-tight">
+                            <span id="dropdownUserLabel" class="block font-bold text-slate-800">Account</span>
+                            <span id="dropdownRoleLabel" class="block text-[10px] text-slate-400 font-normal">Role</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 ml-1"></i>
+                    </button>
+                    <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-slate-100 py-1 z-50">
+                        <button onclick="openMyProfileModal()" class="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium">
+                            <i class="fa-solid fa-id-card text-slate-400 w-4"></i> My Profile / Info
+                        </button>
+                        <div id="dropdownAdminOptions" class="hidden border-b border-slate-100 pb-1 mb-1">
+                            <button onclick="openAccountsManagementModal()" class="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium">
+                                <i class="fa-solid fa-users-gear text-slate-400 w-4"></i> Manage Accounts
+                            </button>
+                            <button onclick="openCreateAccountModal()" class="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium">
+                                <i class="fa-solid fa-user-plus text-slate-400 w-4"></i> Create Account
+                            </button>
+                        </div>
+                        <button onclick="logout()" class="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-medium">
+                            <i class="fa-solid fa-right-from-bracket text-rose-400 w-4"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Modals (Walang binago sa layout ng modals para manatili ang porma) -->
+    <div id="accountModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-5 relative">
+            <button onclick="closeCreateAccountModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+            <h3 class="text-sm font-semibold text-matte-950 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-user-plus text-matte-600"></i> Create Staff Account
+            </h3>
+            <form id="createAccountForm" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Username / Login ID</label>
+                    <input type="text" id="newUsername" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Temporary Password</label>
+                    <input type="password" id="newPassword" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Full Name</label>
+                    <input type="text" id="newName" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Birthdate</label>
+                        <input type="date" id="newBirthdate" required onchange="calculateAgeAndFill('newBirthdate', 'newAgeDisplay')" class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Age (Auto)</label>
+                        <input type="text" id="newAgeDisplay" readonly placeholder="--" class="w-full px-3 py-2 border rounded-md bg-slate-100 font-semibold text-slate-600 text-xs outline-none cursor-not-allowed">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Civil Status</label>
+                        <select id="newCivilStatus" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Widowed">Widowed</option>
+                            <option value="Divorced">Divorced</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Clinic Role</label>
+                        <select id="newRole" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                            <option value="Admin">Admin</option>
+                            <option value="Dentist">Dentist</option>
+                            <option value="Dental Assistant">Dental Assistant</option>
+                            <option value="Clinic Secretary">Clinic Secretary</option>
+                            <option value="Cashier">Cashier</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-matte-600 hover:bg-matte-700 text-white font-medium py-2 rounded-md transition text-xs mt-2">Register Account</button>
+            </form>
+            <p id="accountSuccessMsg" class="hidden text-xs text-center font-medium mt-3"></p>
+        </div>
+    </div>
+
+    <div id="myProfileModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-5 relative">
+            <button onclick="closeMyProfileModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+            <h3 class="text-sm font-semibold text-matte-950 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-id-card text-matte-600"></i> My Profile Settings
+            </h3>
+            <form id="myProfileForm" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Full Name</label>
+                    <input type="text" id="profileName" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Birthdate</label>
+                        <input type="date" id="profileBirthdate" required onchange="calculateAgeAndFill('profileBirthdate', 'profileAgeDisplay')" class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Age (Auto)</label>
+                        <input type="text" id="profileAgeDisplay" readonly placeholder="--" class="w-full px-3 py-2 border rounded-md bg-slate-100 font-semibold text-slate-600 text-xs outline-none cursor-not-allowed">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Civil Status</label>
+                        <select id="profileCivilStatus" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Widowed">Widowed</option>
+                            <option value="Divorced">Divorced</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Clinic Role</label>
+                        <select id="profileRole" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs" disabled>
+                            <option value="Admin">Admin</option>
+                            <option value="Dentist">Dentist</option>
+                            <option value="Dental Assistant">Dental Assistant</option>
+                            <option value="Clinic Secretary">Clinic Secretary</option>
+                            <option value="Cashier">Cashier</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="border-t border-slate-200 pt-3 mt-2">
+                    <span class="block text-xs font-bold text-slate-700 mb-2">Change Password</span>
+                    <div class="space-y-2">
+                        <input type="password" id="profileOldPass" placeholder="Current Password" class="w-full px-3 py-1.5 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                        <input type="password" id="profileNewPass" placeholder="New Password" class="w-full px-3 py-1.5 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-matte-600 hover:bg-matte-700 text-white font-medium py-2 rounded-md transition text-xs mt-2">Save Changes</button>
+            </form>
+            <p id="profileMsg" class="hidden text-xs text-center font-medium mt-3"></p>
+        </div>
+    </div>
+
+    <div id="accountsManagementModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-40 p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-2xl w-full p-5 relative max-h-[85vh] flex flex-col">
+            <button onclick="closeAccountsManagementModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+            <h3 class="text-sm font-semibold text-matte-950 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-users-gear text-matte-600"></i> Account Lists & Management
+            </h3>
+            <div class="overflow-y-auto flex-1 border border-slate-100 rounded-lg">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 font-semibold border-b">
+                            <th class="p-2.5">User/ID</th>
+                            <th class="p-2.5">Info</th>
+                            <th class="p-2.5">Clinic Role</th>
+                            <th class="p-2.5 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountsListTableBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminEditUserModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-5 relative">
+            <button onclick="closeAdminEditUserModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+            <h3 class="text-sm font-semibold text-matte-950 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-user-gear text-matte-600"></i> Edit Account Info (Admin Mode)
+            </h3>
+            <form id="adminEditUserForm" class="space-y-3.5">
+                <input type="hidden" id="adminEditUserIdx">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Full Name</label>
+                    <input type="text" id="adminEditName" required class="w-full px-3 py-2 border rounded-md bg-slate-50 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Birthdate</label>
+                        <input type="date" id="adminEditBirthdate" required onchange="calculateAgeAndFill('adminEditBirthdate', 'adminEditAgeDisplay')" class="w-full px-3 py-2 border rounded-md bg-slate-50 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Age (Auto)</label>
+                        <input type="text" id="adminEditAgeDisplay" readonly class="w-full px-3 py-2 border rounded-md bg-slate-100 text-xs font-semibold text-slate-600 cursor-not-allowed outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Civil Status</label>
+                        <select id="adminEditCivilStatus" required class="w-full px-3 py-2 border rounded-md bg-slate-50 text-xs">
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Widowed">Widowed</option>
+                            <option value="Divorced">Divorced</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Clinic Role</label>
+                        <select id="adminEditRole" required class="w-full px-3 py-2 border rounded-md bg-slate-50 text-xs">
+                            <option value="Admin">Admin</option>
+                            <option value="Dentist">Dentist</option>
+                            <option value="Dental Assistant">Dental Assistant</option>
+                            <option value="Clinic Secretary">Clinic Secretary</option>
+                            <option value="Cashier">Cashier</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-md transition text-xs">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login & Main Content Tabs -->
+    <div id="welcomeContent" class="max-w-sm mx-auto py-24 px-4">
+        <form id="directLoginForm" class="space-y-3.5 bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-left">
+            <h2 class="text-sm font-semibold text-matte-950 mb-1 flex items-center gap-1.5">
+                <i class="fa-solid fa-lock text-matte-600"></i> System Login
+            </h2>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Username</label>
+                <input type="text" id="username" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Password</label>
+                <input type="password" id="password" required class="w-full px-3 py-2 border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none text-xs">
+            </div>
+            <button type="submit" class="w-full bg-matte-600 text-white font-medium py-2 rounded-md hover:bg-matte-700 transition text-xs mt-2">Log In</button>
+        </form>
+    </div>
+
+    <section id="adminDashboard" class="hidden py-6 max-w-7xl mx-auto px-4">
+        <div class="flex flex-col sm:flex-row gap-3 border-b border-slate-200 mb-5 pb-3 items-start sm:items-center justify-between">
+            <div class="flex flex-wrap gap-1.5">
+                <button onclick="switchTab('appointmentsTab')" id="btn-appointmentsTab" class="px-3 py-1.5 rounded-md bg-matte-600 text-white text-xs font-medium transition">Scheduler & Appointments</button>
+                <button onclick="switchTab('posTab')" id="btn-posTab" class="px-3 py-1.5 rounded-md bg-white text-slate-600 text-xs font-medium border border-slate-200 hover:bg-slate-50 transition">Active POS (Billing)</button>
+                <button onclick="switchTab('earningsTab')" id="btn-earningsTab" class="px-3 py-1.5 rounded-md bg-white text-slate-600 text-xs font-medium border border-slate-200 hover:bg-slate-50 transition">Earnings Overview</button>
+                <button onclick="switchTab('backlogTab')" id="btn-backlogTab" class="px-3 py-1.5 rounded-md bg-white text-slate-600 text-xs font-medium border border-slate-200 hover:bg-slate-50 transition">Monthly Backlog Ledger</button>
+            </div>
+            <div id="tomorrowAlert" class="hidden bg-amber-600 text-white font-medium px-3 py-1 rounded-md animate-pulse text-xs">
+                <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Schedule due tomorrow!
+            </div>
+        </div>
+
+        <!-- Appointments Tab -->
+        <div id="appointmentsTab" class="admin-tab grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1 space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border h-fit">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="formTitle" class="text-sm font-semibold text-matte-950"><i class="fa-solid fa-calendar-plus mr-1.5 text-matte-600"></i>Add New Schedule</h3>
+                        <button type="button" id="cancelEditBtn" onclick="resetAppointmentForm()" class="hidden text-xs text-rose-600 font-medium hover:underline">Cancel Edit</button>
+                    </div>
+                    <form id="appointmentForm" class="space-y-3">
+                        <input type="hidden" id="editAppointmentIndex" value="">
+                        <div>
+                            <label class="block text-xs font-medium mb-1 text-slate-500">Patient Name</label>
+                            <input type="text" id="fullName" required class="w-full px-3 py-1.5 border rounded-md bg-slate-50 text-xs focus:ring-1 focus:ring-matte-600 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1 text-slate-500">Phone Number</label>
+                            <input type="tel" id="phone" required class="w-full px-3 py-1.5 border rounded-md bg-slate-50 text-xs focus:ring-1 focus:ring-matte-600 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1 text-slate-500">Select Service</label>
+                            <select id="service" required class="w-full px-3 py-1.5 border rounded-md bg-slate-50 text-xs focus:ring-1 focus:ring-matte-600 focus:outline-none">
+                                <option value="" disabled selected>Choose a service...</option>
+                                <option value="Dental Cleaning">Dental Cleaning</option>
+                                <option value="Tooth Fillings">Tooth Fillings</option>
+                                <option value="Tooth Extraction">Tooth Extraction</option>
+                                <option value="Orthodontics">Orthodontics / Braces</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1 text-slate-500">Date & Time</label>
+                            <input type="datetime-local" id="dateTime" required class="w-full px-3 py-1.5 border rounded-md bg-slate-50 text-xs focus:ring-1 focus:ring-matte-600 focus:outline-none">
+                        </div>
+                        <button type="submit" id="submitFormBtn" class="w-full bg-matte-600 text-white font-medium py-2 rounded-md hover:bg-matte-700 transition text-xs">Save Appointment</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm border">
+                <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-matte-950"><i class="fa-solid fa-list-check mr-1.5 text-matte-600"></i>Active Queue / Schedule List</h3>
+                        <p id="tableInstructionalText" class="text-[11px] text-slate-400 mt-0.5">Click <b>Patient Name</b> to edit.</p>
+                    </div>
+                    <div class="flex items-center gap-2 self-end sm:self-auto">
+                        <label for="filterDate" class="text-xs font-medium text-slate-500">Filter Date:</label>
+                        <input type="date" id="filterDate" onchange="loadTable()" class="px-2.5 py-1 text-xs border rounded-md bg-slate-50 text-slate-700 focus:ring-1 focus:ring-matte-600 focus:outline-none font-medium">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-matte-600 text-white text-xs font-medium">
+                                <th class="p-2.5">Patient Name</th>
+                                <th class="p-2.5">Phone</th>
+                                <th class="p-2.5">Service</th>
+                                <th class="p-2.5">Date & Time</th>
+                                <th class="p-2.5 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- POS Tab -->
+        <div id="posTab" class="admin-tab hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1 space-y-4">
+                <div id="invoiceFormContainer" class="bg-white p-4 rounded-xl shadow-xl border">
+                    <h3 class="text-sm font-semibold text-matte-950 mb-3 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-invoice-dollar text-matte-600"></i> Process Payment
+                    </h3>
+                    <form id="posBillingForm" class="space-y-3">
+                        <input type="hidden" id="posSalesIndex">
+                        <input type="hidden" id="linkedAppointmentId">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 uppercase mb-1">Patient Name</label>
+                            <input type="text" id="posPatientName" required class="w-full px-3 py-1.5 text-xs border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 uppercase mb-1">Treatment / Service</label>
+                            <select id="posServiceName" required class="w-full px-3 py-1.5 text-xs border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none">
+                                <option value="" disabled selected>Choose service...</option>
+                                <option value="Dental Cleaning">Dental Cleaning</option>
+                                <option value="Tooth Fillings">Tooth Fillings</option>
+                                <option value="Tooth Extraction">Tooth Extraction</option>
+                                <option value="Orthodontics">Orthodontics / Braces</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 uppercase mb-1">Total Price (₱)</label>
+                            <input type="number" id="posCostInput" required min="0" step="any" class="w-full px-3 py-1.5 text-xs border rounded-md bg-slate-50 focus:ring-1 focus:ring-matte-600 focus:outline-none font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-matte-600 uppercase mb-1">Amount Paid (₱)</label>
+                            <input type="number" id="posDownPaymentInput" required min="0" step="any" class="w-full px-3 py-1.5 text-xs border border-matte-100 rounded-md bg-matte-50/40 focus:ring-1 focus:ring-matte-600 focus:outline-none font-medium text-matte-950">
+                        </div>
+                        <button type="submit" class="w-full bg-matte-600 text-white font-medium py-2 rounded-md hover:bg-matte-700 transition text-xs mt-1">Save Invoice & Bill</button>
+                    </form>
+                </div>
+                <div id="balanceFormContainer" class="hidden bg-amber-50/50 p-4 rounded-xl shadow-sm border border-amber-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-semibold text-amber-950 flex items-center gap-1.5"><i class="fa-solid fa-hand-holding-dollar text-amber-600"></i> Balance Payment</h3>
+                        <button onclick="cancelBalancePayment()" class="text-xs text-slate-400 hover:text-slate-600 font-medium underline">Cancel</button>
+                    </div>
+                    <form id="balancePaymentForm" class="space-y-3">
+                        <input type="hidden" id="balanceSalesIndex">
+                        <div>
+                            <label class="block text-[11px] font-medium text-amber-900 uppercase">Patient Name</label>
+                            <p id="balancePatientNameDisplay" class="text-xs font-semibold text-slate-700">-</p>
+                        </div>
+                        <div class="bg-white border border-amber-200 rounded-md p-2 flex justify-between items-center text-xs">
+                            <span class="text-slate-400">Remaining Balance:</span>
+                            <span id="balanceRemainingDisplay" class="font-semibold text-rose-600">₱0.00</span>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-amber-950 mb-1">Add Payment Amount (₱)</label>
+                            <input type="number" id="balanceAmountInput" required min="0.01" step="any" class="w-full px-3 py-1.5 text-xs border border-amber-300 rounded-md bg-white focus:outline-amber-500 font-medium text-slate-900">
+                        </div>
+                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 rounded-md transition text-xs">Confirm Payment</button>
+                    </form>
+                </div>
+            </div>
+            <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm border">
+                <div class="mb-3"><h3 class="text-sm font-semibold text-matte-950 flex items-center gap-1.5"><i class="fa-solid fa-receipt text-matte-600"></i> Active Accounts & Receivables</h3></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-xs font-medium border-b uppercase">
+                                <th class="p-2.5">Patient Name</th>
+                                <th class="p-2.5">Treatment</th>
+                                <th class="p-2.5">Total Cost</th>
+                                <th class="p-2.5">Total Paid</th>
+                                <th class="p-2.5">Balance</th>
+                                <th class="p-2.5">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="posTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Earnings Tab -->
+        <div id="earningsTab" class="admin-tab hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-emerald-600 p-4 rounded-xl shadow-sm text-white">
+                    <div class="flex justify-between items-center opacity-80 mb-1"><span class="text-xs font-medium tracking-wider uppercase">Daily Collected Earnings</span><i class="fa-solid fa-calendar-day text-sm"></i></div>
+                    <h4 id="currentDayLabel" class="text-[11px] opacity-70 mb-0.5">Today</h4>
+                    <p id="dailyTotalDisplay" class="text-xl font-semibold">₱0.00</p>
+                </div>
+                <div class="bg-matte-600 p-4 rounded-xl shadow-sm text-white">
+                    <div class="flex justify-between items-center opacity-80 mb-1"><span class="text-xs font-medium tracking-wider uppercase">Monthly Collected Earnings</span><i class="fa-solid fa-wallet text-sm"></i></div>
+                    <h4 id="mainMonthLabel" class="text-[11px] opacity-70 mb-0.5">This Month</h4>
+                    <p id="monthlyTotalDisplay" class="text-xl font-semibold">₱0.00</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-slate-900 text-slate-200 p-4 rounded-xl shadow-sm border border-slate-700">
+                    <div class="mb-3 flex items-center justify-between border-b border-slate-700 pb-2">
+                        <h3 class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5"><i class="fa-solid fa-bolt"></i> Today's Earnings Backlog</h3>
+                    </div>
+                    <div class="overflow-x-auto max-h-72 overflow-y-auto">
+                        <table class="w-full text-left">
+                            <thead><tr class="bg-slate-800 text-slate-300 text-[11px] font-medium border-b border-slate-600"><th class="p-2">Patient</th><th class="p-2">Treatment</th><th class="p-2">Paid Today</th><th class="p-2 text-right">Status</th></tr></thead>
+                            <tbody id="dailyBacklogTableBody" class="divide-y divide-slate-800 text-xs text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-slate-900 text-slate-200 p-4 rounded-xl shadow-sm border border-slate-700">
+                    <div class="mb-3 flex items-center justify-between border-b border-slate-700 pb-2">
+                        <h3 class="text-xs font-semibold text-matte-400 flex items-center gap-1.5"><i class="fa-solid fa-box-archive"></i> This Month's Earnings Backlog</h3>
+                    </div>
+                    <div class="overflow-x-auto max-h-72 overflow-y-auto">
+                        <table class="w-full text-left">
+                            <thead><tr class="bg-slate-800 text-slate-300 text-[11px] font-medium border-b border-slate-600"><th class="p-2">Patient</th><th class="p-2">Treatment</th><th class="p-2">Total Paid</th><th class="p-2 text-right">Status</th></tr></thead>
+                            <tbody id="monthlyBacklogTableBody" class="divide-y divide-slate-800 text-xs text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backlog Tab -->
+        <div id="backlogTab" class="admin-tab hidden space-y-4">
+            <div class="bg-slate-800 text-slate-200 p-5 rounded-xl shadow-sm border border-slate-700">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 border-b border-slate-700 pb-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-emerald-400 flex items-center gap-1.5"><i class="fa-solid fa-folder-open"></i> Monthly Backlog Ledger</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-slate-300 font-medium">Select Month:</label>
+                        <select id="ledgerMonthSelector" onchange="loadLedgerForSelectedMonth()" class="bg-slate-700 border border-slate-600 text-white px-3 py-1.5 text-xs rounded focus:outline-none">
+                        </select>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-4 flex justify-between items-center">
+                    <div>
+                        <span class="text-[11px] uppercase tracking-wider text-slate-400 block font-medium">Calculated Monthly Income</span>
+                        <h4 id="ledgerMonthTitleDisplay" class="text-xs text-emerald-400 font-medium mt-0.5">-</h4>
+                    </div>
+                    <div class="text-right"><span id="ledgerIncomeDisplay" class="text-2xl font-bold text-emerald-400">₱0.00</span></div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-slate-700 text-slate-300 text-xs font-medium border-b border-slate-600">
+                                <th class="p-2.5">Patient Name</th>
+                                <th class="p-2.5">Treatment</th>
+                                <th class="p-2.5">Total Cost</th>
+                                <th class="p-2.5">Total Paid</th>
+                                <th class="p-2.5">Balance</th>
+                                <th class="p-2.5">Date Created</th>
+                                <th class="p-2.5">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backlogTableBody" class="divide-y divide-slate-700 text-xs text-slate-300"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-slate-100 text-slate-400 py-4 text-center text-xs border-t border-slate-200 mt-20">
+        <p>&copy; 2026 Fiona's Dental Clinic. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let loggedInUser = "";
+        let currentUserRole = ""; 
+
+        function hasFullAccess(role) {
+            return role === 'Admin' || role === 'Dentist' || role === 'Clinic Secretary';
+        }
+
+        // AUTOMATIC AGE CALCULATION
+        function calculateAgeAndFill(birthdateInputId, ageDisplayInputId) {
+            const birthdateVal = document.getElementById(birthdateInputId).value;
+            const displayField = document.getElementById(ageDisplayInputId);
+            if (!birthdateVal) {
+                displayField.value = "--";
+                return;
+            }
+            const birthDate = new Date(birthdateVal);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            displayField.value = age >= 0 ? `${age} yrs old` : "Invalid Date";
+        }
+
+        // DATABASE CORE FETCHING
+        function getAccounts() {
+            let accounts = JSON.parse(localStorage.getItem('clinic_users')) || [];
+            if (accounts.length === 0) {
+                accounts.push({ 
+                    username: 'admin', 
+                    password: 'admin123', 
+                    name: 'Main Administrator',
+                    birthdate: '1995-01-01',
+                    civilStatus: 'Single',
+                    role: 'Admin' 
+                });
+                localStorage.setItem('clinic_users', JSON.stringify(accounts));
+            }
+            return accounts;
+        }
+
+        function getAppointments() { return JSON.parse(localStorage.getItem('appointments')) || []; }
+        function getSales() { return JSON.parse(localStorage.getItem('sales')) || []; }
+
+        function clearAllRecords() {
+            localStorage.removeItem('appointments');
+            localStorage.removeItem('sales');
+            resetAppointmentForm();
+            loadTable();
+            loadSalesTable();
+            checkTomorrowAppointments();
+            cancelBalancePayment();
+        }
+
+        // USER INTERFACE MODAL CONTROLS
+        function toggleDropdown(e) {
+            e.stopPropagation();
+            document.getElementById('profileDropdown').classList.toggle('hidden');
+        }
+
+        function closeDropdownOutside(e) {
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown && !dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function openCreateAccountModal() {
+            if(currentUserRole !== 'Admin') return;
+            document.getElementById('accountModal').classList.remove('hidden');
+            document.getElementById('profileDropdown').classList.add('hidden');
+            document.getElementById('newUsername').focus();
+        }
+
+        function closeCreateAccountModal() {
+            document.getElementById('accountModal').classList.add('hidden');
+            document.getElementById('createAccountForm').reset();
+            document.getElementById('accountSuccessMsg').classList.add('hidden');
+        }
+
+        // PROFILE EDITING
+        function openMyProfileModal() {
+            const accounts = getAccounts();
+            const currentAccount = accounts.find(acc => acc.username.toLowerCase() === loggedInUser.toLowerCase());
+            if(!currentAccount) return;
+
+            document.getElementById('profileName').value = currentAccount.name || '';
+            document.getElementById('profileBirthdate').value = currentAccount.birthdate || '';
+            document.getElementById('profileCivilStatus').value = currentAccount.civilStatus || 'Single';
+            document.getElementById('profileRole').value = currentAccount.role || 'Admin';
+            
+            calculateAgeAndFill('profileBirthdate', 'profileAgeDisplay');
+            
+            document.getElementById('profileOldPass').value = '';
+            document.getElementById('profileNewPass').value = '';
+            document.getElementById('profileMsg').classList.add('hidden');
+
+            document.getElementById('myProfileModal').classList.remove('hidden');
+            document.getElementById('profileDropdown').classList.add('hidden');
+        }
+
+        function closeMyProfileModal() {
+            document.getElementById('myProfileModal').classList.add('hidden');
+        }
+
+        document.getElementById('myProfileForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const accounts = getAccounts();
+            const idx = accounts.findIndex(acc => acc.username.toLowerCase() === loggedInUser.toLowerCase());
+            if(idx === -1) return;
+
+            const nameInp = document.getElementById('profileName').value.trim();
+            const bdateInp = document.getElementById('profileBirthdate').value;
+            const statusInp = document.getElementById('profileCivilStatus').value;
+            const oldPass = document.getElementById('profileOldPass').value;
+            const textNewPass = document.getElementById('profileNewPass').value;
+            const msg = document.getElementById('profileMsg');
+
+            if(oldPass || textNewPass) {
+                if(accounts[idx].password !== oldPass) {
+                    msg.innerText = "Error: Incorrect current password!";
+                    msg.className = "text-xs text-rose-600 text-center font-medium mt-3 block";
+                    return;
+                }
+                if(!textNewPass.trim()) {
+                    msg.innerText = "Error: New password cannot be empty!";
+                    msg.className = "text-xs text-rose-600 text-center font-medium mt-3 block";
+                    return;
+                }
+                accounts[idx].password = textNewPass;
+            }
+
+            accounts[idx].name = nameInp;
+            accounts[idx].birthdate = bdateInp;
+            accounts[idx].civilStatus = statusInp;
+
+            localStorage.setItem('clinic_users', JSON.stringify(accounts));
+            msg.innerText = "Profile changes successfully updated!";
+            msg.className = "text-xs text-emerald-600 text-center font-medium mt-3 block";
+            
+            document.getElementById('dropdownUserLabel').innerText = nameInp;
+            document.getElementById('dropdownRoleLabel').innerText = currentUserRole;
+
+            // I-update rin ang session storage kung ang binago ay ang sariling profile
+            sessionStorage.setItem('session_user_name', nameInp);
+
+            setTimeout(() => { 
+                closeMyProfileModal(); 
+                applyRolePermissions();
+            }, 1200);
+        });
+
+        // MANAGEMENT ACCOUNTS TABLE LOGIC
+        function openAccountsManagementModal() {
+            if(currentUserRole !== 'Admin') return;
+            document.getElementById('accountsManagementModal').classList.remove('hidden');
+            document.getElementById('profileDropdown').classList.add('hidden');
+            loadAccountsManagementTable();
+        }
+
+        function closeAccountsManagementModal() {
+            document.getElementById('accountsManagementModal').classList.add('hidden');
+        }
+
+        function loadAccountsManagementTable() {
+            const tbody = document.getElementById('accountsListTableBody');
+            tbody.innerHTML = '';
+            const accounts = getAccounts();
+
+            accounts.forEach((acc, index) => {
+                let computedAge = '--';
+                if(acc.birthdate) {
+                    const bDate = new Date(acc.birthdate);
+                    const today = new Date();
+                    let calc = today.getFullYear() - bDate.getFullYear();
+                    const mDiff = today.getMonth() - bDate.getMonth();
+                    if (mDiff < 0 || (mDiff === 0 && today.getDate() < bDate.getDate())) calc--;
+                    computedAge = calc >= 0 ? `${calc} yrs old` : '--';
+                }
+
+                tbody.insertAdjacentHTML('beforeend', `<tr class="hover:bg-slate-50 transition">
+                    <td class="p-2.5 font-semibold text-slate-800">${acc.username}</td>
+                    <td class="p-2.5 text-slate-500 leading-normal">
+                        <div><b>Name:</b> ${acc.name || 'N/A'} (${computedAge})</div>
+                        <div><b>Birthdate:</b> ${acc.birthdate || 'N/A'}</div>
+                        <div><b>Status:</b> ${acc.civilStatus || 'N/A'}</div>
+                    </td>
+                    <td class="p-2.5 font-semibold text-matte-700">${acc.role || 'Admin'}</td>
+                    <td class="p-2.5 text-center">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <button onclick="openAdminEditUserModal(${index})" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded text-[11px] font-medium border border-slate-200 transition">Edit Info</button>
+                            <button onclick="adminResetUserPassword(${index}, '${acc.username}')" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded text-[11px] font-medium transition">Reset Pass</button>
+                        </div>
+                    </td>
+                </tr>`);
+            });
+        }
+
+        function adminResetUserPassword(index, username) {
+            if(currentUserRole !== 'Admin') return;
+            if(!confirm(`Are you sure you want to reset password for "${username}"?`)) return;
+
+            const accounts = getAccounts();
+            accounts[index].password = "Welcome2026!";
+            localStorage.setItem('clinic_users', JSON.stringify(accounts));
+            alert(`SUCCESS! Temporary Password is: Welcome2026!`);
+        }
+
+        function openAdminEditUserModal(index) {
+            const accounts = getAccounts();
+            const acc = accounts[index];
+            if(!acc) return;
+
+            document.getElementById('adminEditUserIdx').value = index;
+            document.getElementById('adminEditName').value = acc.name || '';
+            document.getElementById('adminEditBirthdate').value = acc.birthdate || '';
+            document.getElementById('adminEditCivilStatus').value = acc.civilStatus || 'Single';
+            document.getElementById('adminEditRole').value = acc.role || 'Admin';
+
+            calculateAgeAndFill('adminEditBirthdate', 'adminEditAgeDisplay');
+            document.getElementById('adminEditUserModal').classList.remove('hidden');
+        }
+
+        function closeAdminEditUserModal() { document.getElementById('adminEditUserModal').classList.add('hidden'); }
+
+        document.getElementById('adminEditUserForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const index = parseInt(document.getElementById('adminEditUserIdx').value);
+            const accounts = getAccounts();
+            if(!accounts[index]) return;
+
+            accounts[index].name = document.getElementById('adminEditName').value.trim();
+            accounts[index].birthdate = document.getElementById('adminEditBirthdate').value;
+            accounts[index].civilStatus = document.getElementById('adminEditCivilStatus').value;
+            accounts[index].role = document.getElementById('adminEditRole').value;
+
+            localStorage.setItem('clinic_users', JSON.stringify(accounts));
+            closeAdminEditUserModal();
+            loadAccountsManagementTable();
+        });
+
+        // TAB NAVIGATION ROUTER
+        function switchTab(tabId) {
+            document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            ['appointmentsTab', 'posTab', 'earningsTab', 'backlogTab'].forEach(id => {
+                const btn = document.getElementById(`btn-${id}`);
+                if(btn) {
+                    if (id === tabId) {
+                        btn.className = "px-3 py-1.5 rounded-md bg-matte-600 text-white text-xs font-medium transition block";
+                    } else {
+                        if ((id === 'posTab' || id === 'earningsTab' || id === 'backlogTab') && currentUserRole === 'Dental Assistant') {
+                            btn.className = "hidden";
+                        } else if ((id === 'appointmentsTab' || id === 'earningsTab' || id === 'backlogTab') && currentUserRole === 'Cashier') {
+                            btn.className = "hidden";
+                        } else {
+                            btn.className = "px-3 py-1.5 rounded-md bg-white text-slate-600 text-xs font-medium border border-slate-200 hover:bg-slate-50 transition block";
+                        }
+                    }
+                }
+            });
+            if(tabId === 'backlogTab') buildLedgerDropdown();
+        }
+
+        // ACCOUNT CREATION
+        document.getElementById('createAccountForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newU = document.getElementById('newUsername').value.trim();
+            const newP = document.getElementById('newPassword').value;
+            const name = document.getElementById('newName').value.trim();
+            const bdate = document.getElementById('newBirthdate').value;
+            const status = document.getElementById('newCivilStatus').value;
+            const role = document.getElementById('newRole').value;
+            const successMsg = document.getElementById('accountSuccessMsg');
+
+            const accounts = getAccounts();
+            if (accounts.some(acc => acc.username.toLowerCase() === newU.toLowerCase())) {
+                successMsg.innerText = "Username already exists!";
+                successMsg.className = "text-xs text-rose-600 text-center font-medium mt-3 block";
+                return;
+            }
+
+            accounts.push({ username: newU, password: newP, name, birthdate: bdate, civilStatus: status, role });
+            localStorage.setItem('clinic_users', JSON.stringify(accounts));
+
+            document.getElementById('createAccountForm').reset();
+            document.getElementById('newAgeDisplay').value = "--";
+            successMsg.innerText = "Account created successfully!";
+            successMsg.className = "text-xs text-emerald-600 text-center font-medium mt-3 block";
+            setTimeout(closeCreateAccountModal, 1500);
+        });
+
+        // FIXED ENFORCED STYLES FOR ROLE PERMISSIONS
+        function applyRolePermissions() {
+            const appointmentsBtn = document.getElementById('btn-appointmentsTab');
+            const posBtn = document.getElementById('btn-posTab');
+            const earningsBtn = document.getElementById('btn-earningsTab');
+            const backlogBtn = document.getElementById('btn-backlogTab');
+            const instructionText = document.getElementById('tableInstructionalText');
+
+            if (currentUserRole === 'Admin') {
+                document.getElementById('dropdownAdminOptions').classList.remove('hidden');
+            } else {
+                document.getElementById('dropdownAdminOptions').classList.add('hidden');
+            }
+
+            if (hasFullAccess(currentUserRole)) {
+                appointmentsBtn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition block";
+                posBtn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition block";
+                earningsBtn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition block";
+                backlogBtn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition block";
+                instructionText.innerHTML = "Click <b>Patient Name</b> to edit. Click <b>Done</b> to move patient to POS billing.";
+                switchTab('appointmentsTab');
+            } else if (currentUserRole === 'Dental Assistant') {
+                appointmentsBtn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition block";
+                posBtn.className = "hidden";
+                earningsBtn.className = "hidden";
+                backlogBtn.className = "hidden";
+                instructionText.innerHTML = "Click <b>Patient Name</b> to view/edit system appointments.";
+                switchTab('appointmentsTab');
+            } else if (currentUserRole === 'Cashier') {
+                appointmentsBtn.className = "hidden";
+                posBtn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition block";
+                earningsBtn.className = "hidden";
+                backlogBtn.className = "hidden";
+                switchTab('posTab');
+            }
+            
+            loadTable();
+            loadSalesTable();
+        }
+
+        // LOGIN VALIDATION ENGINE
+        document.getElementById('directLoginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userInp = document.getElementById('username').value.trim();
+            const passInp = document.getElementById('password').value;
+
+            const accounts = getAccounts();
+            const matchedUser = accounts.find(acc => acc.username.toLowerCase() === userInp.toLowerCase() && acc.password === passInp);
+
+            if (matchedUser) {
+                loggedInUser = matchedUser.username;
+                currentUserRole = matchedUser.role || "Admin";
+                const displayName = matchedUser.name || loggedInUser;
+                
+                // SAVE SESSION TO sessionStorage PARA HINDI MA-LOGOUT SA RELOAD
+                sessionStorage.setItem('session_logged_in', 'true');
+                sessionStorage.setItem('session_username', loggedInUser);
+                sessionStorage.setItem('session_user_role', currentUserRole);
+                sessionStorage.setItem('session_user_name', displayName);
+
+                renderLoggedInUI(displayName);
+            } else { 
+                document.getElementById('password').value = '';
+                document.getElementById('password').placeholder = 'Incorrect credentials, try again...';
+                document.getElementById('password').classList.add('border-red-500', 'bg-red-50');
+            }
+        });
+
+        // HIWALAY NA FUNCTION PARA SA PAG-APPLY NG UI PAGKA-LOGIN / PAG-RELOAD
+        function renderLoggedInUI(displayName) {
+            document.getElementById('welcomeContent').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            
+            document.getElementById('dropdownUserLabel').innerText = displayName;
+            document.getElementById('dropdownRoleLabel').innerText = currentUserRole;
+            document.getElementById('userDropdownNav').classList.remove('hidden');
+
+            applyRolePermissions();
+            checkTomorrowAppointments();
+        }
+
+        // AUTO-CHECK FUNCTION TUWING MAGRE-RELOAD NG BROWSER
+        function checkExistingSession() {
+            const isLogged = sessionStorage.getItem('session_logged_in');
+            if (isLogged === 'true') {
+                loggedInUser = sessionStorage.getItem('session_username');
+                currentUserRole = sessionStorage.getItem('session_user_role');
+                const displayName = sessionStorage.getItem('session_user_name');
+                
+                renderLoggedInUI(displayName);
+            }
+        }
+
+        function logout() {
+            loggedInUser = ""; currentUserRole = "";
+            // BURAHIN ANG SESSION DATA PAG NAG-LOGOUT
+            sessionStorage.clear();
+
+            document.getElementById('welcomeContent').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('userDropdownNav').classList.add('hidden');
+            document.getElementById('profileDropdown').classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('password').placeholder = '';
+            document.getElementById('password').classList.remove('border-red-500', 'bg-red-50');
+            closeCreateAccountModal(); closeMyProfileModal(); closeAccountsManagementModal(); closeAdminEditUserModal();
+        }
+
+        function loadAppointmentToForm(index) {
+            const app = getAppointments()[index];
+            if (!app) return;
+            document.getElementById('editAppointmentIndex').value = index;
+            document.getElementById('fullName').value = app.name;
+            document.getElementById('phone').value = app.phone;
+            document.getElementById('service').value = app.service;
+            document.getElementById('dateTime').value = app.dateTime;
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-user-pen mr-1.5 text-blue-600"></i>Edit Schedule`;
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            const submitBtn = document.getElementById('submitFormBtn');
+            submitBtn.innerText = "Update Appointment";
+            submitBtn.className = "w-full bg-blue-600 text-white font-medium py-2 rounded-md hover:bg-blue-700 transition text-xs";
+        }
+
+        function resetAppointmentForm() {
+            document.getElementById('appointmentForm').reset();
+            document.getElementById('editAppointmentIndex').value = "";
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-calendar-plus mr-1.5 text-matte-600"></i>Add New Schedule`;
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            const submitBtn = document.getElementById('submitFormBtn');
+            submitBtn.innerText = "Save Appointment";
+            submitBtn.className = "w-full bg-matte-600 text-white font-medium py-2 rounded-md hover:bg-matte-700 transition text-xs";
+        }
+
+        document.getElementById('appointmentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editIndex = document.getElementById('editAppointmentIndex').value;
+            const name = document.getElementById('fullName').value;
+            const phone = document.getElementById('phone').value;
+            const service = document.getElementById('service').value;
+            const dateTime = document.getElementById('dateTime').value;
+
+            const appointments = getAppointments();
+            const sales = getSales();
+
+            if (editIndex !== "") {
+                const idx = parseInt(editIndex);
+                const oldName = appointments[idx].name;
+                appointments[idx] = { name, phone, service, dateTime, isCompleted: false };
+                localStorage.setItem('appointments', JSON.stringify(appointments));
+
+                let mIdx = sales.findIndex(s => s.patient === oldName && s.isPending === true);
+                if (mIdx !== -1) {
+                    sales[mIdx].patient = name; sales[mIdx].service = service;
+                    localStorage.setItem('sales', JSON.stringify(sales));
+                }
+            } else {
+                appointments.push({ name, phone, service, dateTime, isCompleted: false });
+                localStorage.setItem('appointments', JSON.stringify(appointments));
+            }
+            resetAppointmentForm(); loadTable(); loadSalesTable(); checkTomorrowAppointments();
+        });
+
+        function finishServiceAndSendToPOS(appointmentIndex) {
+            if(!hasFullAccess(currentUserRole)) return; 
+            const appointments = getAppointments();
+            const app = appointments[appointmentIndex];
+            if (!app) return;
+
+            app.isCompleted = true;
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+
+            const sales = getSales();
+            sales.unshift({ patient: app.name, service: app.service, cost: 0, paidAmount: 0, status: 'Pending Invoice', date: new Date().toLocaleDateString(), timestamp: new Date().getTime(), isPending: true });
+            localStorage.setItem('sales', JSON.stringify(sales));
+
+            if (currentUserRole === 'Clinic Secretary') {
+                alert("Patient status updated to completed! Forwarded to Cashier for billing.");
+                loadTable();
+            } else {
+                switchTab('posTab');
+                cancelBalancePayment();
+                document.getElementById('posSalesIndex').value = 0; 
+                document.getElementById('posPatientName').value = app.name;
+                document.getElementById('posServiceName').value = app.service;
+                document.getElementById('posCostInput').value = ""; document.getElementById('posDownPaymentInput').value = ""; 
+                applyRolePermissions();
+                document.getElementById('posCostInput').focus();
+            }
+        }
+
+        function cancelAppointment(appointmentIndex) {
+            const appointments = getAppointments();
+            const app = appointments[appointmentIndex];
+            if (!app) return;
+
+            app.isCompleted = true;
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+
+            const sales = getSales();
+            sales.unshift({ patient: app.name, service: app.service, cost: 0, paidAmount: 0, status: 'Cancelled', date: new Date().toLocaleDateString(), timestamp: new Date().getTime(), isPending: false });
+            localStorage.setItem('sales', JSON.stringify(sales));
+
+            loadTable(); loadSalesTable(); checkTomorrowAppointments();
+        }
+
+        function selectPatientForInvoice(index, name, service) {
+            if (currentUserRole === 'Dental Assistant') return; 
+            cancelBalancePayment(); 
+            document.getElementById('posSalesIndex').value = index;
+            document.getElementById('posPatientName').value = name;
+            document.getElementById('posServiceName').value = service;
+            document.getElementById('posCostInput').value = ""; document.getElementById('posDownPaymentInput').value = ""; 
+            document.getElementById('posCostInput').focus();
+        }
+
+        document.getElementById('posBillingForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (currentUserRole === 'Dental Assistant') return; 
+            const index = document.getElementById('posSalesIndex').value;
+            const name = document.getElementById('posPatientName').value;
+            const service = document.getElementById('posServiceName').value;
+            const totalCost = parseFloat(document.getElementById('posCostInput').value) || 0;
+            const amountPaid = parseFloat(document.getElementById('posDownPaymentInput').value) || 0;
+
+            const sales = getSales();
+            let status = amountPaid >= totalCost ? 'Paid' : (amountPaid === 0 ? 'Unpaid' : 'With Balance');
+
+            const invoice = { patient: name, service: service, cost: totalCost, paidAmount: amountPaid, status, date: new Date().toLocaleDateString(), timestamp: new Date().getTime(), isPending: false };
+
+            if (index !== "" && sales[index]) { sales[index] = invoice; } 
+            else { sales.unshift(invoice); }
+            
+            localStorage.setItem('sales', JSON.stringify(sales));
+            document.getElementById('posBillingForm').reset();
+            loadSalesTable();
+        });
+
+        function loadBalancePaymentMode(index) {
+            if (currentUserRole === 'Dental Assistant') return; 
+            const sale = getSales()[index];
+            if (!sale) return;
+            const remaining = sale.cost - sale.paidAmount;
+            if (remaining <= 0) return;
+
+            document.getElementById('invoiceFormContainer').classList.add('hidden');
+            document.getElementById('balanceFormContainer').classList.remove('hidden');
+            document.getElementById('balanceSalesIndex').value = index;
+            document.getElementById('balancePatientNameDisplay').innerText = sale.patient;
+            document.getElementById('balanceRemainingDisplay').innerText = `₱${remaining.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+            document.getElementById('balanceAmountInput').value = "";
+        }
+
+        function cancelBalancePayment() {
+            document.getElementById('balanceFormContainer').classList.add('hidden');
+            document.getElementById('invoiceFormContainer').classList.remove('hidden');
+        }
+
+        document.getElementById('balancePaymentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (currentUserRole === 'Dental Assistant') return; 
+            const index = document.getElementById('balanceSalesIndex').value;
+            const addPayment = parseFloat(document.getElementById('balanceAmountInput').value) || 0;
+
+            const sales = getSales();
+            const sale = sales[index];
+            if (sale && addPayment > 0) {
+                sale.paidAmount += addPayment;
+                sale.status = sale.paidAmount >= sale.cost ? 'Paid' : 'With Balance';
+                localStorage.setItem('sales', JSON.stringify(sales));
+                loadSalesTable(); cancelBalancePayment(); 
+            }
+        });
+
+        function loadTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            const filterDateVal = document.getElementById('filterDate').value;
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            let activeApps = getAppointments().map((app, index) => ({ ...app, originalIndex: index })).filter(app => !app.isCompleted);
+            if (filterDateVal) { activeApps = activeApps.filter(app => app.dateTime && app.dateTime.split('T')[0] === filterDateVal); }
+
+            activeApps.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+            activeApps.forEach((app) => {
+                const appDateOnlyStr = app.dateTime.split('T')[0];
+                const showDoneButton = (appDateOnlyStr <= todayStr) && hasFullAccess(currentUserRole);
+                
+                const doneBtn = showDoneButton ? `<button onclick="finishServiceAndSendToPOS(${app.originalIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded transition font-medium">Done</button>` : '';
+
+                tbody.insertAdjacentHTML('beforeend', `<tr class="hover:bg-slate-50 transition">
+                    <td class="p-2.5 text-slate-800">
+                        <button type="button" onclick="loadAppointmentToForm(${app.originalIndex})" class="font-medium hover:text-matte-600 hover:underline">${app.name}</button>
+                    </td>
+                    <td class="p-2.5 text-slate-500">${app.phone}</td>
+                    <td class="p-2.5"><span class="bg-slate-100 text-slate-600 text-[11px] px-2 py-0.5 rounded border">${app.service}</span></td>
+                    <td class="p-2.5 text-slate-600">${new Date(app.dateTime).toLocaleString()}</td>
+                    <td class="p-2.5 text-center">
+                        <div class="inline-flex gap-1">${doneBtn}<button onclick="cancelAppointment(${app.originalIndex})" class="bg-rose-50 text-rose-600 text-[11px] px-2 py-1 rounded border transition">Cancel</button></div>
+                    </td>
+                </tr>`);
+            });
+            if (activeApps.length === 0) tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 italic">No schedules found.</td></tr>`;
+        }
+
+        function loadSalesTable() {
+            if (currentUserRole === 'Dental Assistant') return; 
+            const activeTbody = document.getElementById('posTableBody');
+            const dailyBacklogTbody = document.getElementById('dailyBacklogTableBody');
+            const monthlyBacklogTbody = document.getElementById('monthlyBacklogTableBody');
+            
+            if(activeTbody) activeTbody.innerHTML = ''; 
+            if(dailyBacklogTbody) dailyBacklogTbody.innerHTML = ''; 
+            if(monthlyBacklogTbody) monthlyBacklogTbody.innerHTML = '';
+            
+            const sales = getSales();
+            const currentDayStr = new Date().toLocaleDateString();
+            const now = new Date();
+            let dailyTotal = 0, monthlyTotal = 0;
+
+            sales.forEach((sale, index) => {
+                const saleDate = sale.timestamp ? new Date(sale.timestamp) : new Date(sale.date);
+                const isSameDay = saleDate.toLocaleDateString() === currentDayStr;
+                const isSameMonth = saleDate.getMonth() === now.getMonth() && saleDate.getFullYear() === now.getFullYear();
+
+                if(!sale.isPending && sale.status !== 'Cancelled') {
+                    if(isSameDay) dailyTotal += sale.paidAmount;
+                    if(isSameMonth) monthlyTotal += sale.paidAmount;
+                }
+
+                if (!sale.isPending && hasFullAccess(currentUserRole)) {
+                    let badge = sale.status === 'Cancelled' ? `<span class="text-rose-400">Cancelled</span>` : (sale.status === 'Paid' ? `<span class="text-emerald-400">Settled</span>` : `<span class="text-amber-500">With Balance</span>`);
+                    let markup = `<tr class="border-b border-slate-800"><td class="p-2 font-medium text-slate-200">${sale.patient}</td><td class="p-2 text-slate-400">${sale.service}</td><td class="p-2 text-emerald-400">₱${sale.paidAmount.toLocaleString()}</td><td class="p-2 text-right">${badge}</td></tr>`;
+                    if (isSameDay && dailyBacklogTbody) dailyBacklogTbody.insertAdjacentHTML('beforeend', markup);
+                    if (isSameMonth && monthlyBacklogTbody) monthlyBacklogTbody.insertAdjacentHTML('beforeend', markup);
+                }
+
+                const remainingBalance = Math.max(0, sale.cost - sale.paidAmount);
+                if (activeTbody && (sale.isPending || remainingBalance > 0)) {
+                    let btn = sale.isPending ? `<span class="text-amber-600 font-medium">Pending Bill</span>` : `<button onclick="loadBalancePaymentMode(${index})" class="bg-amber-600 text-white text-[11px] px-2 py-1 rounded">Pay Bal</button>`;
+                    activeTbody.insertAdjacentHTML('beforeend', `<tr class="hover:bg-slate-50 transition">
+                        <td class="p-2.5"><button type="button" onclick="selectPatientForInvoice(${index}, '${sale.patient}', '${sale.service}')" class="text-matte-600 font-medium hover:underline">${sale.patient}</button></td>
+                        <td class="p-2.5 text-slate-500">${sale.service}</td>
+                        <td class="p-2.5">₱${sale.cost.toLocaleString()}</td>
+                        <td class="p-2.5 text-emerald-600">₱${sale.paidAmount.toLocaleString()}</td>
+                        <td class="p-2.5 text-rose-600">₱${remainingBalance.toLocaleString()}</td>
+                        <td class="p-3">${btn}</td>
+                    </tr>`);
+                }
+            });
+
+            if(document.getElementById('dailyTotalDisplay')) document.getElementById('dailyTotalDisplay').innerText = `₱${dailyTotal.toLocaleString()}`;
+            if(document.getElementById('monthlyTotalDisplay')) document.getElementById('monthlyTotalDisplay').innerText = `₱${monthlyTotal.toLocaleString()}`;
+            if(!document.getElementById('backlogTab').classList.contains('hidden')) loadLedgerForSelectedMonth();
+        }
+
+        function buildLedgerDropdown() {
+            const selector = document.getElementById('ledgerMonthSelector');
+            if(!selector) return;
+            selector.innerHTML = '';
+            const cy = new Date().getFullYear();
+            for (let m = 0; m < 12; m++) {
+                selector.insertAdjacentHTML('beforeend', `<option value="${cy}-${String(m).padStart(2,'0')}">${monthNames[m]} ${cy}</option>`);
+            }
+            selector.value = `${cy}-${String(new Date().getMonth()).padStart(2,'0')}`;
+            loadLedgerForSelectedMonth();
+        }
+
+        function loadLedgerForSelectedMonth() {
+            if (currentUserRole === 'Dental Assistant') return; 
+            const selector = document.getElementById('ledgerMonthSelector');
+            const tbody = document.getElementById('backlogTableBody');
+            if(!selector || !tbody) return;
+
+            tbody.innerHTML = '';
+            const [ty, tm] = selector.value.split('-').map(Number);
+            let income = 0;
+
+            getSales().forEach(sale => {
+                const sDate = sale.timestamp ? new Date(sale.timestamp) : new Date(sale.date);
+                if (sDate.getMonth() === tm && sDate.getFullYear() === ty && !sale.isPending) {
+                    if(sale.status !== 'Cancelled') income += sale.paidAmount;
+                    let badge = sale.status === 'Cancelled' ? `<span class="text-rose-400">Cancelled</span>` : (sale.status === 'Paid' ? `<span class="text-emerald-400">Settled</span>` : `<span class="text-amber-500">With Balance</span>`);
+                    tbody.insertAdjacentHTML('beforeend', `<tr class="border-b border-slate-700"><td class="p-2.5 text-white">${sale.patient}</td><td class="p-2.5 text-slate-400">${sale.service}</td><td class="p-2.5">₱${sale.cost.toLocaleString()}</td><td class="p-2.5 text-emerald-400">₱${sale.paidAmount.toLocaleString()}</td><td class="p-2.5 text-rose-400">₱${(sale.cost-sale.paidAmount).toLocaleString()}</td><td class="p-2.5 text-slate-500">${sale.date}</td><td class="p-2.5">${badge}</td></tr>`);
+                }
+            });
+            document.getElementById('ledgerIncomeDisplay').innerText = `₱${income.toLocaleString()}`;
+        }
+
+        function checkTomorrowAppointments() {
+            const tomorrowStr = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1).toDateString();
+            let tc = getAppointments().filter(app => !app.isCompleted && new Date(app.dateTime).toDateString() === tomorrowStr).length;
+            const alertBanner = document.getElementById('tomorrowAlert');
+            if (tc > 0) { alertBanner.innerText = `${tc} due tomorrow`; alertBanner.classList.remove('hidden'); } 
+            else { alertBanner.classList.add('hidden'); }
+        }
+
+        // INITIALIZATION
+        getAccounts();
+        document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
+        
+        // JALANIN ANG SESSION CHECK SA BAWAT PAG-LOAD/RELOAD NG PAGE
+        checkExistingSession();
+    </script>
+</body>
+</html>
