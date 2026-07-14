@@ -68,7 +68,7 @@
         </div>
     </header>
 
-    <!-- Modals (Walang binago sa layout ng modals para manatili ang porma) -->
+    <!-- Modals -->
     <div id="accountModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-5 relative">
             <button onclick="closeCreateAccountModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
@@ -425,7 +425,7 @@
                                 <th class="p-2.5">Total Cost</th>
                                 <th class="p-2.5">Total Paid</th>
                                 <th class="p-2.5">Balance</th>
-                                <th class="p-2.5">Status</th>
+                                <th class="p-3">Status</th>
                             </tr>
                         </thead>
                         <tbody id="posTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
@@ -522,15 +522,15 @@
         // ==========================================
         // GOOGLE SHEETS CLOUD INTEGRATION ENGINE
         // ==========================================
-        const API_URL = "https://script.google.com/macros/s/AKfycbx0FTv-pxegDSs5Jhxzgu4Sw4KgRdM_0uBzTzQaIwP9DAGS-241EddurjIXnJ19qfvI/exec"; // <--- PALITAN MO ITO NG IYONG DEPLOYED WEB APP URL MULA SA GOOGLE SHEETS!
+        const API_URL = "https://script.google.com/macros/s/AKfycbx0FTv-pxegDSs5Jhxzgu4Sw4KgRdM_0uBzTzQaIwP9DAGS-241EddurjIXnJ19qfvI/exec"; 
 
         async function syncPush(sheetName, fullDataArray) {
-            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbx0FTv-pxegDSs5Jhxzgu4Sw4KgRdM_0uBzTzQaIwP9DAGS-241EddurjIXnJ19qfvI/exec")) return;
+            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec")) return;
             try {
+                // INAYOS: Tinanggal ang mode: "no-cors" at ginawang text/plain ang headers para maiwasan ang blank data at CORS rules
                 await fetch(API_URL, {
                     method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify({ action: "saveAll", sheet: sheetName, data: fullDataArray })
                 });
             } catch (e) {
@@ -543,7 +543,7 @@
             try {
                 let res = await fetch(`${API_URL}?sheet=${sheetName}`);
                 let data = await res.json();
-                localStorage.setItem(sheetName, JSON.stringify(data)); // Save local copy
+                localStorage.setItem(sheetName, JSON.stringify(data)); 
                 return data;
             } catch (e) {
                 console.warn("Cloud fetch failed for " + sheetName + ". Using local data fallback.", e);
@@ -552,14 +552,12 @@
         }
 
         async function initialCloudBoot() {
-            // Hilahin ang fresh data mula sa Cloud database sa pag-start ng system
             let users = await syncFetch('clinic_users');
-            if (users.length === 0) getAccounts(); // Generate fallback admin kung walang nakuha
+            if (users.length === 0) getAccounts(); 
             
             await syncFetch('appointments');
             await syncFetch('sales');
 
-            // I-reload ang UI at mga tables gamit ang bagong sync data
             loadTable();
             loadSalesTable();
             checkTomorrowAppointments();
@@ -573,7 +571,6 @@
             return role === 'Admin' || role === 'Dentist' || role === 'Clinic Secretary';
         }
 
-        // AUTOMATIC AGE CALCULATION
         function calculateAgeAndFill(birthdateInputId, ageDisplayInputId) {
             const birthdateVal = document.getElementById(birthdateInputId).value;
             const displayField = document.getElementById(ageDisplayInputId);
@@ -591,7 +588,6 @@
             displayField.value = age >= 0 ? `${age} yrs old` : "Invalid Date";
         }
 
-        // DATABASE CORE FETCHING
         function getAccounts() {
             let accounts = JSON.parse(localStorage.getItem('clinic_users')) || [];
             if (accounts.length === 0) {
@@ -625,7 +621,6 @@
             cancelBalancePayment();
         }
 
-        // USER INTERFACE MODAL CONTROLS
         function toggleDropdown(e) {
             e.stopPropagation();
             document.getElementById('profileDropdown').classList.toggle('hidden');
@@ -651,7 +646,6 @@
             document.getElementById('accountSuccessMsg').classList.add('hidden');
         }
 
-        // PROFILE EDITING
         function openMyProfileModal() {
             const accounts = getAccounts();
             const currentAccount = accounts.find(acc => acc.username.toLowerCase() === loggedInUser.toLowerCase());
@@ -708,7 +702,7 @@
             accounts[idx].civilStatus = statusInp;
 
             localStorage.setItem('clinic_users', JSON.stringify(accounts));
-            syncPush('clinic_users', accounts); // Cloud Push Sync
+            syncPush('clinic_users', accounts); 
             
             msg.innerText = "Profile changes successfully updated!";
             msg.className = "text-xs text-emerald-600 text-center font-medium mt-3 block";
@@ -724,7 +718,6 @@
             }, 1200);
         });
 
-        // MANAGEMENT ACCOUNTS TABLE LOGIC
         function openAccountsManagementModal() {
             if(currentUserRole !== 'Admin') return;
             document.getElementById('accountsManagementModal').classList.remove('hidden');
@@ -777,7 +770,7 @@
             const accounts = getAccounts();
             accounts[index].password = "Welcome2026!";
             localStorage.setItem('clinic_users', JSON.stringify(accounts));
-            syncPush('clinic_users', accounts); // Cloud Push Sync
+            syncPush('clinic_users', accounts); 
             alert(`SUCCESS! Temporary Password is: Welcome2026!`);
         }
 
@@ -810,12 +803,11 @@
             accounts[index].role = document.getElementById('adminEditRole').value;
 
             localStorage.setItem('clinic_users', JSON.stringify(accounts));
-            syncPush('clinic_users', accounts); // Cloud Push Sync
+            syncPush('clinic_users', accounts); 
             closeAdminEditUserModal();
             loadAccountsManagementTable();
         });
 
-        // TAB NAVIGATION ROUTER
         function switchTab(tabId) {
             document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
@@ -838,7 +830,6 @@
             if(tabId === 'backlogTab') buildLedgerDropdown();
         }
 
-        // ACCOUNT CREATION
         document.getElementById('createAccountForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const newU = document.getElementById('newUsername').value.trim();
@@ -858,7 +849,7 @@
 
             accounts.push({ username: newU, password: newP, name, birthdate: bdate, civilStatus: status, role });
             localStorage.setItem('clinic_users', JSON.stringify(accounts));
-            syncPush('clinic_users', accounts); // Cloud Push Sync
+            syncPush('clinic_users', accounts); 
 
             document.getElementById('createAccountForm').reset();
             document.getElementById('newAgeDisplay').value = "--";
@@ -867,7 +858,6 @@
             setTimeout(closeCreateAccountModal, 1500);
         });
 
-        // FIXED ENFORCED STYLES FOR ROLE PERMISSIONS
         function applyRolePermissions() {
             const appointmentsBtn = document.getElementById('btn-appointmentsTab');
             const posBtn = document.getElementById('btn-posTab');
@@ -907,7 +897,6 @@
             loadSalesTable();
         }
 
-        // LOGIN VALIDATION ENGINE
         document.getElementById('directLoginForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const userInp = document.getElementById('username').value.trim();
@@ -1024,7 +1013,6 @@
                 localStorage.setItem('appointments', JSON.stringify(appointments));
             }
             
-            // Cloud Sync push
             syncPush('appointments', appointments);
             syncPush('sales', sales);
 
@@ -1044,7 +1032,6 @@
             sales.unshift({ patient: app.name, service: app.service, cost: 0, paidAmount: 0, status: 'Pending Invoice', date: new Date().toLocaleDateString(), timestamp: new Date().getTime(), isPending: true });
             localStorage.setItem('sales', JSON.stringify(sales));
 
-            // Cloud Sync push
             syncPush('appointments', appointments);
             syncPush('sales', sales);
 
@@ -1075,7 +1062,6 @@
             sales.unshift({ patient: app.name, service: app.service, cost: 0, paidAmount: 0, status: 'Cancelled', date: new Date().toLocaleDateString(), timestamp: new Date().getTime(), isPending: false });
             localStorage.setItem('sales', JSON.stringify(sales));
 
-            // Cloud Sync push
             syncPush('appointments', appointments);
             syncPush('sales', sales);
 
@@ -1110,7 +1096,7 @@
             else { sales.unshift(invoice); }
             
             localStorage.setItem('sales', JSON.stringify(sales));
-            syncPush('sales', sales); // Cloud Sync push
+            syncPush('sales', sales); 
 
             document.getElementById('posBillingForm').reset();
             loadSalesTable();
@@ -1148,7 +1134,7 @@
                 sale.paidAmount += addPayment;
                 sale.status = sale.paidAmount >= sale.cost ? 'Paid' : 'With Balance';
                 localStorage.setItem('sales', JSON.stringify(sales));
-                syncPush('sales', sales); // Cloud Sync push
+                syncPush('sales', sales); 
                 
                 loadSalesTable(); cancelBalancePayment(); 
             }
@@ -1281,13 +1267,10 @@
             }
         }
 
-        // INITIALIZATION ON LOAD
         document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
         
-        // Patakbuhin ang session validation at hilaan ng data mula sa Google Sheet Cloud
         checkExistingSession();
         initialCloudBoot();
     </script>
-    
 </body>
 </html>
