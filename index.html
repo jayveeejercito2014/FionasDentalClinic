@@ -522,10 +522,10 @@
         // ==========================================
         // GOOGLE SHEETS CLOUD INTEGRATION ENGINE
         // ==========================================
-        const API_URL = "https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec"; // <--- PALITAN MO ITO NG IYONG DEPLOYED WEB APP URL MULA SA GOOGLE SHEETS!
+        const API_URL = "https://script.google.com/macros/s/AKfycbx0FTv-pxegDSs5Jhxzgu4Sw4KgRdM_0uBzTzQaIwP9DAGS-241EddurjIXnJ19qfvI/exec"; // <--- PALITAN MO ITO NG IYONG DEPLOYED WEB APP URL MULA SA GOOGLE SHEETS!
 
         async function syncPush(sheetName, fullDataArray) {
-            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec")) return;
+            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbx0FTv-pxegDSs5Jhxzgu4Sw4KgRdM_0uBzTzQaIwP9DAGS-241EddurjIXnJ19qfvI/exec")) return;
             try {
                 await fetch(API_URL, {
                     method: "POST",
