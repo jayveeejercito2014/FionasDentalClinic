@@ -321,7 +321,33 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium mb-1 text-slate-500">Date & Time</label>
-                            <input type="datetime-local" id="dateTime" required class="w-full px-3 py-1.5 border rounded-md bg-slate-50 text-xs focus:ring-1 focus:ring-matte-600 focus:outline-none">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="date" id="appointmentDate" required class="w-full px-3 py-1.5 border rounded-md bg-slate-50 text-xs focus:ring-1 focus:ring-matte-600 focus:outline-none">
+                                <select id="appointmentTime" required class="w-full px-3 py-1.5 border rounded-md bg-slate-50 text-xs focus:ring-1 focus:ring-matte-600 focus:outline-none">
+                                    <option value="" disabled selected>Select Time...</option>
+                                    <!-- Morning -->
+                                    <option value="08:00">08:00 AM</option>
+                                    <option value="08:30">08:30 AM</option>
+                                    <option value="09:00">09:00 AM</option>
+                                    <option value="09:30">09:30 AM</option>
+                                    <option value="10:00">10:00 AM</option>
+                                    <option value="10:30">10:30 AM</option>
+                                    <option value="11:00">11:00 AM</option>
+                                    <option value="11:30">11:30 AM</option>
+                                    <!-- Afternoon -->
+                                    <option value="12:00">12:00 PM</option>
+                                    <option value="12:30">12:30 PM</option>
+                                    <option value="13:00">01:00 PM</option>
+                                    <option value="13:30">01:30 PM</option>
+                                    <option value="14:00">02:00 PM</option>
+                                    <option value="14:30">02:30 PM</option>
+                                    <option value="15:00">03:00 PM</option>
+                                    <option value="15:30">03:30 PM</option>
+                                    <option value="16:00">04:00 PM</option>
+                                    <option value="16:30">04:30 PM</option>
+                                    <option value="17:00">05:00 PM</option>
+                                </select>
+                            </div>
                         </div>
                         <button type="submit" id="submitFormBtn" class="w-full bg-matte-600 text-white font-medium py-2 rounded-md hover:bg-matte-700 transition text-xs">Save Appointment</button>
                     </form>
@@ -527,7 +553,6 @@
         async function syncPush(sheetName, fullDataArray) {
             if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec")) return;
             try {
-                // INAYOS: Tinanggal ang mode: "no-cors" at ginawang text/plain ang headers para maiwasan ang blank data at CORS rules
                 await fetch(API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -569,6 +594,16 @@
 
         function hasFullAccess(role) {
             return role === 'Admin' || role === 'Dentist' || role === 'Clinic Secretary';
+        }
+
+        function formatDisplayTime(timeStr) {
+            if (!timeStr) return '';
+            let [hrs, mins] = timeStr.split(':');
+            let hour = parseInt(hrs);
+            let ampm = hour >= 12 ? 'PM' : 'AM';
+            hour = hour % 12;
+            hour = hour ? hour : 12; 
+            return `${String(hour).padStart(2, '0')}:${mins} ${ampm}`;
         }
 
         function calculateAgeAndFill(birthdateInputId, ageDisplayInputId) {
@@ -968,7 +1003,16 @@
             document.getElementById('fullName').value = app.name;
             document.getElementById('phone').value = app.phone;
             document.getElementById('service').value = app.service;
-            document.getElementById('dateTime').value = app.dateTime;
+            
+            if (app.dateTime && app.dateTime.includes('T')) {
+                let [d, t] = app.dateTime.split('T');
+                document.getElementById('appointmentDate').value = d;
+                document.getElementById('appointmentTime').value = t.substring(0, 5);
+            } else {
+                document.getElementById('appointmentDate').value = app.dateTime || '';
+                document.getElementById('appointmentTime').value = '';
+            }
+
             document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-user-pen mr-1.5 text-blue-600"></i>Edit Schedule`;
             document.getElementById('cancelEditBtn').classList.remove('hidden');
             const submitBtn = document.getElementById('submitFormBtn');
@@ -992,7 +1036,10 @@
             const name = document.getElementById('fullName').value;
             const phone = document.getElementById('phone').value;
             const service = document.getElementById('service').value;
-            const dateTime = document.getElementById('dateTime').value;
+            
+            const dateVal = document.getElementById('appointmentDate').value;
+            const timeVal = document.getElementById('appointmentTime').value;
+            const dateTime = `${dateVal}T${timeVal}`;
 
             const appointments = getAppointments();
             const sales = getSales();
@@ -1158,13 +1205,21 @@
                 
                 const doneBtn = showDoneButton ? `<button onclick="finishServiceAndSendToPOS(${app.originalIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded transition font-medium">Done</button>` : '';
 
+                let displayDateTime = '';
+                if (app.dateTime && app.dateTime.includes('T')) {
+                    let [d, t] = app.dateTime.split('T');
+                    displayDateTime = `${d} ${formatDisplayTime(t)}`;
+                } else {
+                    displayDateTime = app.dateTime;
+                }
+
                 tbody.insertAdjacentHTML('beforeend', `<tr class="hover:bg-slate-50 transition">
                     <td class="p-2.5 text-slate-800">
                         <button type="button" onclick="loadAppointmentToForm(${app.originalIndex})" class="font-medium hover:text-matte-600 hover:underline">${app.name}</button>
                     </td>
                     <td class="p-2.5 text-slate-500">${app.phone}</td>
                     <td class="p-2.5"><span class="bg-slate-100 text-slate-600 text-[11px] px-2 py-0.5 rounded border">${app.service}</span></td>
-                    <td class="p-2.5 text-slate-600">${new Date(app.dateTime).toLocaleString()}</td>
+                    <td class="p-2.5 text-slate-600">${displayDateTime}</td>
                     <td class="p-2.5 text-center">
                         <div class="inline-flex gap-1">${doneBtn}<button onclick="cancelAppointment(${app.originalIndex})" class="bg-rose-50 text-rose-600 text-[11px] px-2 py-1 rounded border transition">Cancel</button></div>
                     </td>
