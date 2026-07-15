@@ -36,8 +36,6 @@
                 <span class="text-base font-semibold text-matte-950 tracking-tight">Fiona's Dental Clinic</span>
             </div>
             <nav class="flex items-center gap-4 font-medium">
-                <button onclick="clearAllRecords()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md hover:bg-slate-200 transition text-xs font-medium border border-slate-200">Clear Data</button>
-                
                 <div id="userDropdownNav" class="hidden relative inline-block text-left">
                     <button onclick="toggleDropdown(event)" class="bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-md border border-slate-200 transition text-xs font-semibold flex items-center gap-2 focus:outline-none">
                         <i class="fa-solid fa-circle-user text-matte-600 text-sm"></i>
@@ -194,7 +192,7 @@
             <h3 class="text-sm font-semibold text-matte-950 mb-4 flex items-center gap-2">
                 <i class="fa-solid fa-users-gear text-matte-600"></i> Account Lists & Management
             </h3>
-            <div class="overflow-y-auto flex-1 border border-slate-100 rounded-lg">
+            <div class="overflow-y-auto flex-1 border border-slate-100 rounded-lg mb-4">
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
                         <tr class="bg-slate-100 text-slate-600 font-semibold border-b">
@@ -206,6 +204,17 @@
                     </thead>
                     <tbody id="accountsListTableBody" class="divide-y divide-slate-100"></tbody>
                 </table>
+            </div>
+            
+            <!-- Safe & Admin-Only Danger Zone Section -->
+            <div class="border-t border-rose-100 pt-3 flex items-center justify-between bg-rose-50/50 -mx-5 -mb-5 p-4 rounded-b-xl">
+                <div class="text-left">
+                    <span class="block text-xs font-semibold text-rose-950">System Danger Zone</span>
+                    <span class="block text-[10px] text-slate-400 font-normal">Wiping data deletes all logs permanently.</span>
+                </div>
+                <button onclick="clearAllRecords()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-md transition text-xs font-medium shadow-sm">
+                    <i class="fa-solid fa-trash-can mr-1"></i> Clear System Data
+                </button>
             </div>
         </div>
     </div>
@@ -551,7 +560,7 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbx0FTv-pxegDSs5Jhxzgu4Sw4KgRdM_0uBzTzQaIwP9DAGS-241EddurjIXnJ19qfvI/exec"; 
 
         async function syncPush(sheetName, fullDataArray) {
-            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec")) return;
+            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbx0FTv-pxegDSs5Jhxzgu4Sw4KgRdM_0uBzTzQaIwP9DAGS-241EddurjIXnJ19qfvI/exec")) return;
             try {
                 await fetch(API_URL, {
                     method: "POST",
@@ -564,7 +573,7 @@
         }
 
         async function syncFetch(sheetName) {
-            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbzPS_Q6tH4_MkWMLsktEouFwwZI-WMuzCYuVauCioLOylDW1J5qTTPDERnuo-BRFxo/exec")) return JSON.parse(localStorage.getItem(sheetName)) || [];
+            if (!API_URL || API_URL.includes("https://script.google.com/macros/s/AKfycbx0FTv-pxegDSs5Jhxzgu4Sw4KgRdM_0uBzTzQaIwP9DAGS-241EddurjIXnJ19qfvI/exec")) return JSON.parse(localStorage.getItem(sheetName)) || [];
             try {
                 let res = await fetch(`${API_URL}?sheet=${sheetName}`);
                 let data = await res.json();
@@ -644,16 +653,30 @@
         function getSales() { return JSON.parse(localStorage.getItem('sales')) || []; }
 
         function clearAllRecords() {
-            if(!confirm("Are you sure you want to clear all data? This will also wipe out local data.")) return;
-            localStorage.removeItem('appointments');
-            localStorage.removeItem('sales');
-            syncPush('appointments', []);
-            syncPush('sales', []);
-            resetAppointmentForm();
-            loadTable();
-            loadSalesTable();
-            checkTomorrowAppointments();
-            cancelBalancePayment();
+            if(currentUserRole !== 'Admin') {
+                alert("Unauthorized access.");
+                return;
+            }
+            
+            if(!confirm("WARNING: Are you sure you want to clear all data? This will completely wipe out the local storage and cloud records!")) return;
+            
+            let confirmation = prompt("To confirm deletion, please type the word 'DELETE' in all caps:");
+            
+            if (confirmation === "DELETE") {
+                localStorage.removeItem('appointments');
+                localStorage.removeItem('sales');
+                syncPush('appointments', []);
+                syncPush('sales', []);
+                resetAppointmentForm();
+                loadTable();
+                loadSalesTable();
+                checkTomorrowAppointments();
+                cancelBalancePayment();
+                closeAccountsManagementModal();
+                alert("System data has been completely successfully cleared.");
+            } else {
+                alert("Action cancelled. Incorrect verification code.");
+            }
         }
 
         function toggleDropdown(e) {
