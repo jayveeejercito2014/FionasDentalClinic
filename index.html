@@ -371,7 +371,7 @@
                     </div>
                     <div class="flex items-center gap-2 self-end sm:self-auto">
                         <label for="filterDate" class="text-xs font-medium text-slate-500">Filter Date:</label>
-                        <input type="date" id="filterDate" onchange="loadTable()" class="px-2.5 py-1 text-xs border rounded-md bg-slate-50 text-slate-700 focus:ring-1 focus:ring-matte-600 focus:outline-none font-medium">
+                        <input type="date" id="filterDate" onchange="loadTable()" oninput="loadTable()" class="px-2.5 py-1 text-xs border rounded-md bg-slate-50 text-slate-700 focus:ring-1 focus:ring-matte-600 focus:outline-none font-medium">
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -1210,6 +1210,9 @@
             }
         });
 
+        // ==========================================
+        // UPDATED LOADTABLE FUNCTION
+        // ==========================================
         function loadTable() {
             const tbody = document.getElementById('tableBody');
             if(!tbody) return;
@@ -1218,12 +1221,17 @@
             const todayStr = new Date().toISOString().split('T')[0];
 
             let activeApps = getAppointments().map((app, index) => ({ ...app, originalIndex: index })).filter(app => !app.isCompleted);
-            if (filterDateVal) { activeApps = activeApps.filter(app => app.dateTime && app.dateTime.split('T')[0] === filterDateVal); }
+            
+            // IF MAY NAPILING FILTER DATE: I-filter lang ang para sa araw na iyon.
+            // IF WALANG NAPILI (OR INALIS ANG DATE): lalabas LAHAT ng active schedule.
+            if (filterDateVal) { 
+                activeApps = activeApps.filter(app => app.dateTime && app.dateTime.split('T')[0] === filterDateVal); 
+            }
 
             activeApps.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
 
             activeApps.forEach((app) => {
-                const appDateOnlyStr = app.dateTime.split('T')[0];
+                const appDateOnlyStr = app.dateTime ? app.dateTime.split('T')[0] : '';
                 const showDoneButton = (appDateOnlyStr <= todayStr) && hasFullAccess(currentUserRole);
                 
                 const doneBtn = showDoneButton ? `<button onclick="finishServiceAndSendToPOS(${app.originalIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded transition font-medium">Done</button>` : '';
@@ -1345,8 +1353,6 @@
             }
         }
 
-        document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
-        
         checkExistingSession();
         initialCloudBoot();
     </script>
